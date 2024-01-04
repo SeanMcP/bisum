@@ -22,81 +22,111 @@ class Int {
     }
 }
 
-const DEBUG_MODE = true;
-const log = DEBUG_MODE ? console.log : () => { };
+window.DEBUG_MODE = ["localhost", "127.0.0.1"].includes(location.hostname);
+const log = window.DEBUG_MODE ? console.log : () => { };
 
 const app = document.querySelector("#app");
-const numbers = [33, 33, 34];
-const ints = numbers
-    .map((number) => new Int(number))
-    .toSorted((a, b) => b.length - a.length);
-const max = ints[0].length;
+const form = document.querySelector("form#settings");
 
-const carrySums = [null];
-const placeSums = [];
-
-let carry;
-
-for (let i = 0; i < max; i++) {
-    log("column", i);
-    let sum = ints.reduce((acc, cur) => {
-        const column = cur.column(i);
-        log("\taddend", column);
-        return acc + (column ? parseInt(column) : 0);
-    }, 0);
-    if (carry) {
-        log("\tcarry", carry);
-        sum += carry;
-        carry = undefined;
+form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (form.matches(":has(:invalid)")) {
+        return alert("All fields are required!");
     }
-    log("\tsum:", sum);
-    const int = new Int(sum);
-    carry = int.sum.carry;
+    const formData = new FormData(form);
+    const addendsCount = formData.get("addendsCount");
+    const maxDigits = formData.get("maxDigits");
 
-    placeSums.unshift(int.sum.place);
-    carrySums.unshift(int.sum.carry);
-}
+    log({
+        addendsCount,
+        maxDigits,
+    });
 
-if (carry) {
-    // For a hanging carry, remove first carry sum and add it to place sums
-    placeSums.unshift(carrySums.shift());
-    carry = undefined;
-}
+    const addends = generateAddends(addendsCount, maxDigits);
 
-log({
-    carrySums,
-    placeSums,
+    generateProblem(addends);
 });
 
-function getInputMarkup(sum) {
-    return `<input inputmode="numeric" max="9" min="0" pattern="^${sum}$" type="text" required />`;
+function generateAddends(count, maxDigits) {
+    const addends = [];
+    for (let i = 0; i < count; i++) {
+        addends.push(Math.floor(Math.random() * 10 ** maxDigits));
+    }
+    return addends.toSorted((a, b) => b - a);
 }
 
-app.innerHTML = `
+function generateProblem(addends) {
+    const ints = addends
+        .map((number) => new Int(number))
+        .toSorted((a, b) => b.length - a.length);
+    const max = ints[0].length;
+
+    const carrySums = [null];
+    const placeSums = [];
+
+    let carry;
+
+    for (let i = 0; i < max; i++) {
+        log("column", i);
+        let sum = ints.reduce((acc, cur) => {
+            const column = cur.column(i);
+            log("\taddend", column);
+            return acc + (column ? parseInt(column) : 0);
+        }, 0);
+        if (carry) {
+            log("\tcarry", carry);
+            sum += carry;
+            carry = undefined;
+        }
+        log("\tsum:", sum);
+        const int = new Int(sum);
+        carry = int.sum.carry;
+
+        placeSums.unshift(int.sum.place);
+        carrySums.unshift(int.sum.carry);
+    }
+
+    if (carry) {
+        // For a hanging carry, remove first carry sum and add it to place sums
+        placeSums.unshift(carrySums.shift());
+        carry = undefined;
+    }
+
+    log({
+        carrySums,
+        placeSums,
+    });
+
+    function getInputMarkup(sum) {
+        const conditionalAttributes = sum != undefined
+            ? `pattern="^${sum}$" required`
+            // 0 or empty string
+            : `pattern="^0?$"`;
+        return `<input inputmode="numeric" max="9" min="0" type="text" ${conditionalAttributes} />`;
+    }
+
+    app.innerHTML = `
     <div id="carry-sums">
-        ${carrySums.reduce(
-    (html, sum) =>
-        html + (sum != undefined ? getInputMarkup(sum) : "<span></span>"),
-    ""
-)}
+        ${carrySums.reduce((html, sum) => html + getInputMarkup(sum), "")}
     </div>
     <div id="addends">
         ${ints.reduce(
-    (html, int) =>
-        html +
-        "<div class='addend'>" +
-        int.string
-            .split("")
-            .reduce((str, char) => str + `<span>${char}</span>`, "") +
-        "</div>",
-    ""
-)}
+        (html, int) =>
+            html +
+            "<div class='addend'>" +
+            int.string
+                .split("")
+                .reduce((str, char) => str + `<span>${char}</span>`, "") +
+            "</div>",
+        ""
+    )}
     </div>
     <div id="place-sums">
-        ${placeSums.reduce(
-    (html, sum) =>
-        html + (sum != undefined ? getInputMarkup(sum) : "<span></span>"),
-    ""
-)}
+        ${placeSums.reduce((html, sum) => html + getInputMarkup(sum), "")}
     </div>
 `;
+}
+
+generateProblem(
+    generateAddends(2, 2)
+);

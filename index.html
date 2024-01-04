@@ -6,11 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bisum - Addition practice</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="shortcut icon" href="https://fav.farm/🦬" type="image/x-icon">
 </head>
 
 <body>
     <main>
-        <h1>Bisum - Addition practice</h1>
+        <h1>🦬 Bisum – Addition practice</h1>
+        <form id="settings">
+            <label>
+                <span>Number of addends</span>
+                <input max="5" min="2" name="addendsCount" required type="number" value="2">
+            </label>
+            <label>
+                <span>Max number of digits</span>
+                <input max="10" min="1" name="maxDigits" required type="number" value="3">
+            </label>
+            <button>Generate</button>
+        </form>
+        <br />
         <div id="app"></div>
     </main>
     <script src="script.js"></script>
